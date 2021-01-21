@@ -5,24 +5,42 @@ import scala.util.Using
 import scala.util.Random
 import java.sql.ResultSet
 import java.sql.ResultSetMetaData
+import java.io.File
+import java.io.FileWriter
+import java.io.BufferedWriter
 
 
 object actions{
     val conn = ConnectionUtil.getConnection();
 
-    def viewmyteams(): Array[String] = {
+    def writetxt(result : String): Unit = {
+        val file = new File("/home/nyystanco6/projects/project0/project0/csvs/simresults.txt")
+        val bw = new BufferedWriter(new FileWriter(file))
+        bw.write(result)
+        bw.close()
+    }
+
+    def viewmyteams(checknum : Int): Array[String] = {
         val viewteams = conn.prepareStatement("select * from myteams;")
         viewteams.execute()
         val viewresults = viewteams.getResultSet()
         val myteams = new Array[String](31)
         var arraycount = 0
-        println("\nYour current teams are:")
-        while(viewresults.next()){
-            myteams(arraycount) = viewresults.getString("tm")
-            println(myteams(arraycount))
-            arraycount = arraycount + 1
+        if (checknum == 1){
+            println("\nYour current teams are:")
+            while(viewresults.next()){
+                myteams(arraycount) = viewresults.getString("tm")
+                println(myteams(arraycount))
+                arraycount = arraycount + 1
+            }
+            println(s"Current number of teams in favorites database: ${arraycount}")
         }
-        println(s"Current number of teams in database: ${arraycount}")
+        else{
+            while(viewresults.next()){
+                myteams(arraycount) = viewresults.getString("tm")
+                arraycount = arraycount + 1
+            }
+        }
         return myteams
     }
     //viewmyteams()
@@ -31,15 +49,15 @@ object actions{
         var newteam : String = ""
         println("\nPlease enter 3-character abbreviation for team to add:")
         newteam = scala.io.StdIn.readLine().toUpperCase()
-        val myteams = viewmyteams()
+        val myteams = viewmyteams(2)
         if(myteams contains newteam){
-            println("\nThe specified team is already contained in your database.\n")
+            println("\nThe specified team is already contained in your favorites database.\n")
         }
         else if(newteam.matches("ARI|ATL|BAL|BOS|CHC|CHW|CIN|CLE|COL|DET|HOU|KCR|LAA|LAD|MIA|MIL|MIN|NYM|NYY|OAK|PHI|PIT|SDP|SEA|SFG|STL|TBR|TEX|TOR|WSN")){
             val addteams = conn.prepareStatement(s"insert into myteams(Tm) values ('${newteam}')")
             addteams.execute()
-            val myteamsupdated = viewmyteams()
-            println("\nTeam successfully added to your database. Your current teams are:")
+            val myteamsupdated = viewmyteams(2)
+            println("\nTeam successfully added to your favorites database. Your current teams are:")
             var i = 0
             while (myteamsupdated(i) != null) {
                 println(myteamsupdated(i))
@@ -56,12 +74,12 @@ object actions{
         var deleteteam : String = ""
         println("\nPlease enter 3-character abbreviation for team to delete:")
         deleteteam = scala.io.StdIn.readLine().toUpperCase()
-        val myteams = viewmyteams()
+        val myteams = viewmyteams(2)
         if(myteams contains deleteteam){
             val deleteteams = conn.prepareStatement(s"DELETE FROM myteams WHERE Tm = '${deleteteam}'")
             deleteteams.execute()
-            val myteamsupdated = viewmyteams()
-            println("\nTeam successfully deleted from your database. Your current teams are:")
+            val myteamsupdated = viewmyteams(2)
+            println("\nTeam successfully deleted from your favorites database. Your current teams are:")
             var i = 0
             while (myteamsupdated(i) != null) {
                 println(myteamsupdated(i))
@@ -69,22 +87,22 @@ object actions{
             }   
         }
         else{
-            println("\nInvalid entry, or team is not currently contained in database.\n")
+            println("\nInvalid entry, or team is not currently contained in favorites database.\n")
         }
     }
     //deleteteam()
 
     def deleteall(): Unit ={
         var deleteall: String = ""
-        println("\nAre you sure you would like to remove all teams from your database? (Y/N)")
+        println("\nAre you sure you would like to remove all teams from your favorites database? (Y/N)")
         deleteall = scala.io.StdIn.readLine().toUpperCase()
         if(deleteall == "Y"){
-            println("\nAll teams were successfully removed from your database.\n")
+            println("\nAll teams were successfully removed from your favorites database.\n")
             val deleteallteams = conn.prepareStatement(s"DELETE FROM myteams;")
             deleteallteams.execute()
         }
         else{
-            println("\nNo teams were removed from your database.\n")
+            println("\nNo teams were removed from your favorites database.\n")
         }
     }
     //deleteall()
@@ -360,7 +378,7 @@ object actions{
 
             //println(team1score)
             //println(team2score)
-            if (team1score > team2score){
+            if (team1score >= team2score){
                 team1score = team1score.ceil
                 team2score = team2score.floor
                 team1scoreI = team1score.toInt
@@ -385,11 +403,15 @@ object actions{
         team1runsD = team1runs.toDouble/gamecount
         team2runsD = team2runs.toDouble/gamecount
 
+        var simresultsfinal = new String
+        simresultsfinal = (s"FINAL RESULTS OF SIMULATION:\n${team1} - ${team1wins} wins\n${team2} - ${team2wins} wins\nTOTAL RUNS SCORED DURING SIMULATION:\n${team1} - ${team1runs} runs\n${team2} - ${team2runs} runs\nRUNS SCORED PER GAME DURING SIMULATION:\n${team1} - ${team1runsD} runs scored per game\n${team2} - ${team2runsD} runs scored per game")
 
         println(s"\nFINAL RESULTS OF SIMULATION:\n${team1} - ${team1wins} wins\n${team2} - ${team2wins} wins")
         println(s"\nTOTAL RUNS SCORED DURING SIMULATION:\n${team1} - ${team1runs} runs\n${team2} - ${team2runs} runs")
         println(s"\nRUNS SCORED PER GAME DURING SIMULATION:\n${team1} - ${team1runsD} runs scored per game\n${team2} - ${team2runsD} runs scored per game")
 
+
+        actions.writetxt(simresultsfinal)
     }
 
     

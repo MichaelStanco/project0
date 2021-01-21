@@ -28,4 +28,6 @@ object Populator{
         val clearmyteams = conn.prepareStatement("DELETE FROM myteams;")
         clearmyteams.execute()
     }
+
+    
 }
